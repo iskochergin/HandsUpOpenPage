@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 import webbrowser
+import subprocess
+import time
 
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
@@ -35,8 +37,31 @@ try:
         if results.pose_landmarks:
             landmarks = [landmark for landmark in results.pose_landmarks.landmark]
             if is_hand_up(landmarks):
-                webbrowser.open_new('https://canvas.letovo.ru')
-                exit(0)
+                url = 'https://example.com'
+                chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+
+                webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
+                webbrowser.get('chrome').open_new(url)
+
+                time.sleep(2)
+
+                script = '''
+                Add-Type @"
+                  using System;
+                  using System.Runtime.InteropServices;
+                  public class Win32 {
+                    [DllImport("user32.dll")]
+                    [return: MarshalAs(UnmanagedType.Bool)]
+                    public static extern bool SetForegroundWindow(IntPtr hWnd);
+                  }
+                "@
+
+                $Chrome = Get-Process chrome | Where-Object { $_.MainWindowHandle -ne 0 } | Sort-Object StartTime -Descending | Select-Object -First 1
+                [Win32]::SetForegroundWindow($Chrome.MainWindowHandle)
+                '''
+
+                subprocess.run(["powershell", "-Command", script], capture_output=True)
+                break
 
 except Exception as e:
     print(f"An error occurred: {e}")
